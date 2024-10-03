@@ -1,2 +1,39 @@
-node_modules
-package-lock.json
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Dependency directories
+/.pnp
+.pnp.js
+dist/
+# Optional npm cache directory
+.npm
+.nx
+# ESLint cache
+.eslintcache
+
+# Parcel cache
+.cache
+
+# Next.js build output
+.next/
+
+# Nuxt.js build output
+.nuxt/
+
+# Vuepress build output
+.vuepress/dist/
+
+# Serverless directories
+.serverless/
+
+# Firebase directories
+.firebase/
+
+# Yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
