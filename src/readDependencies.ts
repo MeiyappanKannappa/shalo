@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Define interfaces to represent the structure of your JSON data
 interface Dependency {
     source: string;
     target: string;
@@ -10,7 +9,6 @@ interface Dependency {
 
 interface NodeData {
     root: string;
-    // Add other properties if needed
 }
 
 interface JsonData {
@@ -26,15 +24,11 @@ interface JsonData {
     };
 }
 
-// Function to read and parse the JSON file
 function readJsonFile(filePath: string): JsonData | null {
     try {
-        // Read the file synchronously
+        console.log('Reading JSON file from:', filePath);
         const data = fs.readFileSync(filePath, 'utf8');
-
-        // Parse the JSON data
         const jsonData: JsonData = JSON.parse(data);
-
         return jsonData;
     } catch (err) {
         console.error('Error reading or parsing the file:', err);
@@ -42,29 +36,33 @@ function readJsonFile(filePath: string): JsonData | null {
     }
 }
 
-// Function to extract the array for "@shared/components"
-export function getAppDependencies(appName: string ): { dependency: string; path: string }[] | null {
-    // Specify the path to your JSON file
-    //console.log('Inside getAppDependencies')
-    const filePath = path.join(__dirname,'..', 'output.json');
-    // console.log('filePath ',filePath)
-    // Read and parse the JSON file
+export function getAppDependencies(appName: string): { dependency: string; path: string }[] | null {
+    const filePath = path.join(__dirname, '../../nvc-web-app/output.json');
     const jsonData = readJsonFile(filePath);
-    // console.log('jsonData ',jsonData)
+
     if (!jsonData || !jsonData.graph || !jsonData.graph.dependencies) {
-        console.error('Invalid JSON structure');
+        console.error('Invalid JSON structure or missing dependencies');
         return null;
     }
 
-    // Access the dependencies
     const dependencies = jsonData.graph.dependencies;
-
-    // Get the dependencies for "@shared/components"
     const sharedComponentsDependencies = dependencies[appName];
     const dependencyPaths: { dependency: string; path: string }[] = [];
+
+    if (!jsonData.graph.nodes[appName]) {
+        console.error(`App not found: ${appName}`);
+        return null;
+    }
+
     const nodes = jsonData.graph.nodes;
     dependencyPaths.push({ dependency: appName, path: nodes[appName].data.root });
-    sharedComponentsDependencies?.forEach((dep) => {
+
+    if (!sharedComponentsDependencies) {
+        console.warn(`No dependencies found for app: ${appName}`);
+        return dependencyPaths;
+    }
+
+    sharedComponentsDependencies.forEach((dep) => {
         const node = nodes[dep.target];
         if (node && node.data && node.data.root) {
             dependencyPaths.push({ dependency: dep.source, path: node.data.root });
@@ -73,7 +71,5 @@ export function getAppDependencies(appName: string ): { dependency: string; path
         }
     });
 
-
-    // console.log('dependencyPaths',dependencyPaths)
     return dependencyPaths;
 }

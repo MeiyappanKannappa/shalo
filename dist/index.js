@@ -17,6 +17,7 @@ const figlet_1 = __importDefault(require("figlet"));
 const commander_1 = require("commander");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const node_child_process_1 = require("node:child_process");
 const child_process_1 = require("child_process");
 const readDependencies_1 = require("./readDependencies");
 const program = new commander_1.Command();
@@ -92,66 +93,51 @@ function findAppDependencies(options) {
     }
     return dependentAppNames;
 }
-function initAndSetSparseCheckoutForApp(options) {
-    const appFolderNames = findAppDependencies(options);
-    console.log('appFolderNames', appFolderNames);
-    const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
-    console.log('gitSparseCheckoutInitSuccess ', gitSparseCheckoutInitSuccess);
-    if (!gitSparseCheckoutInitSuccess) {
-        return;
-    }
-    else {
-        console.log('appFolderNames.join(",") ', appFolderNames.join(" "));
-        executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
-    }
-    //     const command = 'nx';
-    //     const args = ['graph', '--file=output.json'];
-    //
-    // // Spawn a new process
-    //     const nxProcess = spawn(command, args);
-    //
-    // // Handle standard output
-    //     nxProcess.stdout.on('data', (data) => {
-    //         console.log(`stdout: ${data}`);
-    //     });
-    //
-    // // Handle standard error
-    //     nxProcess.stderr.on('data', (data) => {
-    //         console.error(`stderr: ${data}`);
-    //     });
-    //
-    // // Handle errors
-    //     nxProcess.on('error', (error) => {
-    //         console.error(`Error spawning process: ${error.message}`);
-    //     });
-    //
-    // // Handle process exit
-    //     nxProcess.on('close', (code) => {
-    //         console.log(`Child process exited with code ${code}`);
-    //         if (code !== 0) {
-    //             console.log(`Command Failed nx with code ${code} `);
-    //             return;
-    //         }
-    //         const appFolderNames: string[] = findAppDependencies(options);
-    //         console.log('appFolderNames', appFolderNames)
-    //         const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
-    //         console.log('gitSparseCheckoutInitSuccess ', gitSparseCheckoutInitSuccess)
-    //         if (!gitSparseCheckoutInitSuccess) {
-    //             return;
-    //         } else {
-    //             console.log('appFolderNames.join(",") ', appFolderNames.join(" "))
-    //             executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
-    //         }
-    //     });
-    console.log('Done');
-    return;
-}
-function checkout(options, command) {
+// function getNxVersion() {
+//     try {
+//         const versionOutput = execSync(`nx --version`, { encoding: 'utf8' }).trim();
+//         return versionOutput;
+//     } catch (error) {
+//         console.error(`Error fetching Nx version: ${error}`);
+//         return null;
+//     }
+// }
+function checkout(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const isCommandAvailable = checkCommandAvailability('nx');
         console.log('Called with options %o', options);
+        // Ensure options.apps is defined and is an array
+        if (!options.apps) {
+            options.apps = [];
+        }
         if (isCommandAvailable) {
-            initAndSetSparseCheckoutForApp(options);
+            // Run the nx command first
+            const command = 'nx';
+            const args = ['graph', '--file=output.json'];
+            // Spawn a new process
+            const nxProcess = (0, node_child_process_1.spawn)(command, args);
+            // Handle standard output
+            nxProcess.stdout.on('data', (data) => {
+                console.log(`stdout: ${data}`);
+            });
+            // Handle standard error
+            nxProcess.stderr.on('data', (data) => {
+                console.error(`stderr: ${data}`);
+            });
+            // Handle errors
+            nxProcess.on('error', (error) => {
+                console.error(`Error spawning process: ${error.message}`);
+            });
+            // Handle process exit
+            nxProcess.on('close', (code) => {
+                console.log(`Child process exited with code ${code}`);
+                if (code !== 0) {
+                    console.log(`Command Failed nx with code ${code}`);
+                    return;
+                }
+                // Initialize and set sparse checkout
+                initAndSetSparseCheckoutForApp(options);
+            });
         }
         else {
             console.error("nx command unavailable. Please install nx");
@@ -159,6 +145,75 @@ function checkout(options, command) {
         }
     });
 }
+function initAndSetSparseCheckoutForApp(options) {
+    const appFolderNames = findAppDependencies(options);
+    console.log('appFolderNames', appFolderNames);
+    // Initialize sparse checkout
+    const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
+    console.log('gitSparseCheckoutInitSuccess ', gitSparseCheckoutInitSuccess);
+    if (!gitSparseCheckoutInitSuccess) {
+        return;
+    }
+    // Set sparse checkout
+    console.log('appFolderNames.join(",") ', appFolderNames.join(" "));
+    executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
+    console.log('Done');
+    return;
+}
+// function initAndSetSparseCheckoutForApp(options: any) {
+//     // Initialize sparse checkout
+//     const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
+//     console.log('gitSparseCheckoutInitSuccess ', gitSparseCheckoutInitSuccess);
+//     if (!gitSparseCheckoutInitSuccess) {
+//         return;
+//     }
+//     // Run the nx command
+//     const command = 'nx';
+//     const args = ['graph', '--file=output.json'];
+//     // Spawn a new process
+//     const nxProcess = spawn(command, args);
+//     // Handle standard output
+//     nxProcess.stdout.on('data', (data) => {
+//         console.log(`stdout: ${data}`);
+//     });
+//     // Handle standard error
+//     nxProcess.stderr.on('data', (data) => {
+//         console.error(`stderr: ${data}`);
+//     });
+//     // Handle errors
+//     nxProcess.on('error', (error) => {
+//         console.error(`Error spawning process: ${error.message}`);
+//     });
+//     // Handle process exit
+//     nxProcess.on('close', (code) => {
+//         console.log(`Child process exited with code ${code}`);
+//         if (code !== 0) {
+//             console.log(`Command Failed nx with code ${code}`);
+//             return;
+//         }
+//         // Find app dependencies and set sparse checkout
+//         const appFolderNames: string[] = findAppDependencies(options);
+//         console.log('appFolderNames', appFolderNames);
+//         console.log('appFolderNames.join(",") ', appFolderNames.join(" "));
+//         executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
+//     });
+//     console.log('Done');
+//     return;
+// }
+// async function checkout(options: any) {
+//     const isCommandAvailable = checkCommandAvailability('nx');
+//     console.log('Called with options %o', options);
+//     // Ensure options.apps is defined and is an array
+//     if (!options.apps) {
+//         options.apps = [];
+//     }
+//     if (isCommandAvailable) {
+//         initAndSetSparseCheckoutForApp(options);
+//     } else {
+//         console.error("nx command unavailable. Please install nx");
+//         return;
+//     }
+// }
 function checkCommandAvailability(command) {
     try {
         const stdout = (0, child_process_1.execSync)(`which ${command}`, { encoding: 'utf8' });
