@@ -6,3 +6,39 @@ A typical NX Monorepo folder structure would like the image below, how the git o
 ![image](https://github.com/user-attachments/assets/70887c17-fd06-45ac-bf7b-e616db105634)
 
 However it will be difficult to educate hundreds of engineer operating on the monorepo working on various apps, perhaps even to idenify the list of shared packages / components their app needs. #### shalo is a cli tool based on nodejs to solve this problem.
+
+### Install Shalo in your machine 
+```
+npm install -g git+git@github.com:MeiyappanKannappa/shalo.git 
+```
+* This can be used in your CI Pipelines as well*
+
+Clone your repo
+```
+shalo clone <GITREPO_URL>
+(or)
+npx shalo clone <GITREPO_URL>
+```
+Install Dependencies in your repo
+
+```
+npm/yarn install
+```
+Now lets do checkout for only apps that you in need in NX Monorepo. Shalo computes the dependencies within nx and will checkout all the required dependent apps in the monorepo
+```
+shalo checkout -a <APP/PROJECT_NAME>
+```
+you can exclude the dependent apps as well. But be careful using this, as it may break nx build or any nx commands
+```
+shalo checkout -a <APP/PROJECT_NAME> -e  <EXCLUDED_APP_NAME>
+```
+
+In addition you may need to add folders in the monorepo like mocks, tools etc to add folders
+```
+shalo add <APP/PROJECT/FOLDER name>
+
+```
+To come out of sparse checkout mode or to disable it and use git cli
+```
+shalo clean
+```
