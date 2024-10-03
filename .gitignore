@@ -1,12 +1,12 @@
 # Node.js
-node_modules/
+node_modules
 npm-debug.log
 yarn-error.log
 
 # Dependency directories
 /.pnp
 .pnp.js
-dist/
+dist
 # Optional npm cache directory
 .npm
 .nx
