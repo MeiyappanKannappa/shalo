@@ -4,6 +4,10 @@
   "description": "Tool to optimize git operations in NX Monorepo, and reduce the checkout & clone size",
   "main": "index.js",
   "bin": "dist/index.js",
+  "engines" : { 
+    "npm" : ">=8.0.0 <9.0.0",
+    "node" : ">=16.0.0 <17.0.0"
+  },
   "scripts": {
     "build": "npx tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
