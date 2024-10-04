@@ -31,7 +31,7 @@ jobs:
           git commit -m "Automated build: $(date +'%Y-%m-%d %H:%M:%S')"
           git push origin master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
 
   # publish-npm:
   #   needs: build
