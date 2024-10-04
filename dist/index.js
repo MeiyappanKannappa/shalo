@@ -17,6 +17,7 @@ const figlet_1 = __importDefault(require("figlet"));
 const commander_1 = require("commander");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const node_child_process_1 = require("node:child_process");
 const child_process_1 = require("child_process");
 const readDependencies_1 = require("./readDependencies");
 const program = new commander_1.Command();
@@ -66,7 +67,7 @@ function cloneRepo(name, command) {
     });
 }
 function findAppDependencies(options) {
-    var _a, _b;
+    var _a, _b, _c;
     const appNames = options.apps !== '.' ? `${options.apps}` : '';
     const appNameArray = options.apps !== '' && ((_a = options.apps) === null || _a === void 0 ? void 0 : _a.includes(',')) ? appNames.split(',') : [options.apps];
     // console.log(`options.apps ${options.apps}`)
@@ -74,7 +75,7 @@ function findAppDependencies(options) {
     const excludedAppNames = options.exclude !== '' ? `${options.exclude}` : '';
     const excludedApps = options.exclude !== '' && ((_b = options.exclude) === null || _b === void 0 ? void 0 : _b.includes(',')) ? excludedAppNames.split(',') : [options.exclude];
     // console.log('excludedApps ',excludedApps)
-    if (options.apps.length > 0) {
+    if (((_c = options === null || options === void 0 ? void 0 : options.apps) === null || _c === void 0 ? void 0 : _c.length) > 0) {
         for (let i = 0; i < (appNameArray === null || appNameArray === void 0 ? void 0 : appNameArray.length); i++) {
             const sharedComponentsArray = (0, readDependencies_1.getAppDependencies)(appNameArray[i]);
             // console.log('sharedComponentsArray ',sharedComponentsArray)
@@ -90,59 +91,47 @@ function findAppDependencies(options) {
             }
         }
     }
+    else {
+        console.error("No apps specified, are you passing the app name with -a or --apps?");
+    }
     return dependentAppNames;
 }
 function initAndSetSparseCheckoutForApp(options) {
-    const appFolderNames = findAppDependencies(options);
-    console.log('appFolderNames', appFolderNames);
-    const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
-    console.log('gitSparseCheckoutInitSuccess ', gitSparseCheckoutInitSuccess);
-    if (!gitSparseCheckoutInitSuccess) {
-        return;
-    }
-    else {
-        console.log('appFolderNames.join(",") ', appFolderNames.join(" "));
-        executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
-    }
-    //     const command = 'nx';
-    //     const args = ['graph', '--file=output.json'];
-    //
-    // // Spawn a new process
-    //     const nxProcess = spawn(command, args);
-    //
-    // // Handle standard output
-    //     nxProcess.stdout.on('data', (data) => {
-    //         console.log(`stdout: ${data}`);
-    //     });
-    //
-    // // Handle standard error
-    //     nxProcess.stderr.on('data', (data) => {
-    //         console.error(`stderr: ${data}`);
-    //     });
-    //
-    // // Handle errors
-    //     nxProcess.on('error', (error) => {
-    //         console.error(`Error spawning process: ${error.message}`);
-    //     });
-    //
-    // // Handle process exit
-    //     nxProcess.on('close', (code) => {
-    //         console.log(`Child process exited with code ${code}`);
-    //         if (code !== 0) {
-    //             console.log(`Command Failed nx with code ${code} `);
-    //             return;
-    //         }
-    //         const appFolderNames: string[] = findAppDependencies(options);
-    //         console.log('appFolderNames', appFolderNames)
-    //         const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
-    //         console.log('gitSparseCheckoutInitSuccess ', gitSparseCheckoutInitSuccess)
-    //         if (!gitSparseCheckoutInitSuccess) {
-    //             return;
-    //         } else {
-    //             console.log('appFolderNames.join(",") ', appFolderNames.join(" "))
-    //             executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
-    //         }
-    //     });
+    const command = 'nx';
+    const args = ['graph', '--file=output.json'];
+    // Spawn a new process
+    const nxProcess = (0, node_child_process_1.spawn)(command, args);
+    // Handle standard output
+    nxProcess.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+    });
+    // Handle standard error
+    nxProcess.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+    // Handle errors
+    nxProcess.on('error', (error) => {
+        console.error(`Error spawning process: ${error.message}`);
+    });
+    // Handle process exit
+    nxProcess.on('close', (code) => {
+        console.log(`Child process exited with code ${code}`);
+        if (code !== 0) {
+            console.log(`Command Failed nx with code ${code} `);
+            return;
+        }
+        const appFolderNames = findAppDependencies(options);
+        console.log('appFolderNames', appFolderNames);
+        const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
+        console.log('gitSparseCheckoutInitSuccess ', gitSparseCheckoutInitSuccess);
+        if (!gitSparseCheckoutInitSuccess) {
+            return;
+        }
+        else {
+            console.log('appFolderNames.join(",") ', appFolderNames.join(" "));
+            executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
+        }
+    });
     console.log('Done');
     return;
 }
