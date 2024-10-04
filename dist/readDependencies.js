@@ -44,7 +44,9 @@ function readJsonFile(filePath) {
 function getAppDependencies(appName) {
     // Specify the path to your JSON file
     //console.log('Inside getAppDependencies')
-    const filePath = path.join(__dirname, '..', 'output.json');
+    const projectRoot = process.cwd();
+    const filePath = path.join(projectRoot, 'output.json');
+    // const filePath = path.join(__dirname,'..', 'output.json');
     // console.log('filePath ',filePath)
     // Read and parse the JSON file
     const jsonData = readJsonFile(filePath);
