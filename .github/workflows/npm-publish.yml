@@ -5,11 +5,11 @@ name: Node.js Package
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'master'
+    # inputs:
+    #   environment:
+    #     description: 'Target environment'
+    #     required: true
+    #     default: 'master'
 
 jobs:
   build:
