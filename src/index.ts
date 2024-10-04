@@ -86,8 +86,17 @@ async function checkout(options: any) {
     }
 
     if (isCommandAvailable) {
+        const nxVersion = getNxVersion();
         const command = 'nx';
-        const args = ['graph', '--file=output.json'];
+        let args: string[];
+
+        if (nxVersion >= 19) {
+            const base = getGitBaseCommit();
+            const head = getGitHeadCommit();
+            args = ['graph', '--affected', `--base=${base}`, `--head=${head}`, '--file=output.json'];
+        } else {
+            args = ['graph', '--file=output.json'];
+        }
 
         const nxProcess = spawn(command, args);
 
@@ -157,5 +166,61 @@ function executeCommand(command: string) {
     } catch (error) {
         console.error(`Command execution failed: ${error}`);
         return false;
+    }
+}
+
+function getNxVersion(): number {
+    try {
+        const versionOutput = execSync(`nx --version`, { encoding: 'utf8' }).trim();
+        console.log(`Raw Nx version output: ${versionOutput}`);
+        
+        // Extract the version number using a regular expression
+        const versionMatch = versionOutput.match(/v(\d+\.\d+\.\d+)/);
+        if (versionMatch && versionMatch[1]) {
+            const version = parseFloat(versionMatch[1]);
+            console.log(`Parsed Nx version: ${version}`);
+            return version;
+        } else {
+            // Handle the case where the version output is in a different format
+            const versionLines = versionOutput.split('\n');
+            for (const line of versionLines) {
+                const match = line.match(/v(\d+\.\d+\.\d+)/);
+                if (match && match[1]) {
+                    const version = parseFloat(match[1]);
+                    console.log(`Parsed Nx version from line: ${version}`);
+                    return version;
+                }
+            }
+            console.error('Failed to parse Nx version');
+            return 0;
+        }
+    } catch (error) {
+        console.error(`Error fetching Nx version: ${error}`);
+        return 0;
+    }
+}
+
+function getGitBaseCommit(): string {
+    try {
+        const defaultBranch = execSync('git symbolic-ref refs/remotes/origin/HEAD', { encoding: 'utf8' })
+            .trim()
+            .replace('refs/remotes/origin/', '');
+        const baseCommit = execSync(`git rev-parse ${defaultBranch}`, { encoding: 'utf8' }).trim();
+        console.log(`Base commit: ${baseCommit}`);
+        return baseCommit;
+    } catch (error) {
+        console.error(`Error fetching base commit: ${error}`);
+        return '';
+    }
+}
+
+function getGitHeadCommit(): string {
+    try {
+        const headCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+        console.log(`Head commit: ${headCommit}`);
+        return headCommit;
+    } catch (error) {
+        console.error(`Error fetching head commit: ${error}`);
+        return '';
     }
 }
