@@ -62,7 +62,7 @@ function findAppDependencies(options: any): string[] {
     const excludedAppNames = options.exclude !== '' ? `${options.exclude}` : '';
     const excludedApps: string[] = options.exclude !== '' && options.exclude?.includes(',') ? excludedAppNames.split(',') : [options.exclude];
     // console.log('excludedApps ',excludedApps)
-    if (options.apps.length > 0) {
+    if (options?.apps?.length > 0) {
 
         for (let i = 0; i < appNameArray?.length; i++) {
             const sharedComponentsArray = getAppDependencies(appNameArray[i]);
@@ -81,60 +81,52 @@ function findAppDependencies(options: any): string[] {
             }
         }
 
+    }else{
+        console.error("No apps specified, are you passing the app name with -a or --apps?")
     }
     return dependentAppNames;
 }
 
 function initAndSetSparseCheckoutForApp(options: any) {
-    const appFolderNames: string[] = findAppDependencies(options);
-    console.log('appFolderNames', appFolderNames)
-    const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
-    console.log('gitSparseCheckoutInitSuccess ', gitSparseCheckoutInitSuccess)
-    if (!gitSparseCheckoutInitSuccess) {
-        return;
-    } else {
-        console.log('appFolderNames.join(",") ', appFolderNames.join(" "))
-        executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
-    }
-//     const command = 'nx';
-//     const args = ['graph', '--file=output.json'];
-//
-// // Spawn a new process
-//     const nxProcess = spawn(command, args);
-//
-// // Handle standard output
-//     nxProcess.stdout.on('data', (data) => {
-//         console.log(`stdout: ${data}`);
-//     });
-//
-// // Handle standard error
-//     nxProcess.stderr.on('data', (data) => {
-//         console.error(`stderr: ${data}`);
-//     });
-//
-// // Handle errors
-//     nxProcess.on('error', (error) => {
-//         console.error(`Error spawning process: ${error.message}`);
-//     });
-//
-// // Handle process exit
-//     nxProcess.on('close', (code) => {
-//         console.log(`Child process exited with code ${code}`);
-//         if (code !== 0) {
-//             console.log(`Command Failed nx with code ${code} `);
-//             return;
-//         }
-//         const appFolderNames: string[] = findAppDependencies(options);
-//         console.log('appFolderNames', appFolderNames)
-//         const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
-//         console.log('gitSparseCheckoutInitSuccess ', gitSparseCheckoutInitSuccess)
-//         if (!gitSparseCheckoutInitSuccess) {
-//             return;
-//         } else {
-//             console.log('appFolderNames.join(",") ', appFolderNames.join(" "))
-//             executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
-//         }
-//     });
+    const command = 'nx';
+    const args = ['graph', '--file=output.json'];
+
+// Spawn a new process
+    const nxProcess = spawn(command, args);
+
+// Handle standard output
+    nxProcess.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+    });
+
+// Handle standard error
+    nxProcess.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+
+// Handle errors
+    nxProcess.on('error', (error) => {
+        console.error(`Error spawning process: ${error.message}`);
+    });
+
+// Handle process exit
+    nxProcess.on('close', (code) => {
+        console.log(`Child process exited with code ${code}`);
+        if (code !== 0) {
+            console.log(`Command Failed nx with code ${code} `);
+            return;
+        }
+        const appFolderNames: string[] = findAppDependencies(options);
+        console.log('appFolderNames', appFolderNames)
+        const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
+        console.log('gitSparseCheckoutInitSuccess ', gitSparseCheckoutInitSuccess)
+        if (!gitSparseCheckoutInitSuccess) {
+            return;
+        } else {
+            console.log('appFolderNames.join(",") ', appFolderNames.join(" "))
+            executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
+        }
+    });
 
 
     console.log('Done')
