@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import figlet from "figlet";
 import { Command } from "commander";
 import fs from "fs";
@@ -25,7 +24,8 @@ program
 
 program
     .command('add <appName>')
-    .description('Add a folder to the monorepo')
+    .description('Add a folder or app to the monorepo')
+    .option('-f, --folder-only', 'Add only the folder without dependencies')
     .action(addApp);
 
 program
@@ -47,9 +47,19 @@ async function disableSparseCheckout() {
     console.log('Removed NXGIT controlled checkout. Now you can use git!!');
 }
 
-async function addApp(name: string) {
-    executeCommand(`git sparse-checkout add ${name}`);
-    console.log(`Added app: ${name}`);
+async function addApp(name: string, options: any) {
+    if (options.folderOnly) {
+        executeCommand(`git sparse-checkout add ${name}`);
+        console.log(`Added folder: ${name}`);
+    } else {
+        const dependencies = getAppDependencies(name);
+        if (dependencies) {
+            dependencies.forEach(dep => {
+                executeCommand(`git sparse-checkout add ${dep.path}`);
+                console.log(`Added dependency: ${dep.path}`);
+            });
+        }
+    }
 }
 
 async function cloneRepo(source: string) {

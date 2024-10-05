@@ -29,6 +29,16 @@ Now lets do checkout for only apps **(NA APP NAME)** that you in need in NX Mono
 shalo checkout -a <NX-APP/NX-PROJECT_NAME>
 ```
 you can exclude the dependent apps as well. But be careful using this, as it may break nx build or any nx commands
+
+Add Folders or Projects
+```
+shalo add <FOLDER_NAME>
+```
+To add an NX project and its dependencies:
+```
+shalo add <NX_PROJECT_NAME>
+```
+
 ```
 shalo checkout -a <APP/PROJECT_NAME> -e  <NX-EXCLUDED_APP_NAME>
 ```
