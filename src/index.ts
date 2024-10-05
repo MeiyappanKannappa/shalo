@@ -20,7 +20,8 @@ program
     .description('Checkout a specific app')
     .option('-a, --apps <app-name>', 'App Name for checkout')
     .option('-e, --exclude <app-name>', 'App Name to exclude from checkout')
-    .option('-t, --team <config-file>', 'Name of the Team as in nxgit.yaml')
+    .option('-f, --folder-only <folder>', 'Folder only for checkout')
+
     .action(checkout);
 
 program
@@ -119,12 +120,32 @@ function initAndSetSparseCheckoutForApp(options: any) {
 }
 
 async function checkout(options: any) {
-    const isCommandAvailable = checkCommandAvailability('nx');
     console.log('Called with options %o', options);
-    if (isCommandAvailable) {
-        initAndSetSparseCheckoutForApp(options);
+
+    if (options.folderOnly) {
+        const nxGraphCommand = 'nx graph --file=output.json';
+        executeCommand(nxGraphCommand);
+        console.log('Generated output.json');
+
+        const initSuccess = executeCommand('git sparse-checkout init --cone');
+        if (initSuccess) {
+            const folderPath = options.folderOnly;
+            executeCommand(`git sparse-checkout add ${folderPath}`);
+            console.log(`Added folder: ${folderPath}`);
+        }
     } else {
-        console.error("nx command unavailable. Please install nx");
+        const isCommandAvailable = checkCommandAvailability('nx');
+        if (isCommandAvailable) {
+            const appDependencies = findAppDependencies(options);
+            const allDependenciesExist = appDependencies.every(dep => fs.existsSync(dep)); 
+            if (allDependenciesExist) {
+                initAndSetSparseCheckoutForApp(options);
+            } else {
+                console.error('Some dependencies are missing.');
+            }
+        } else {
+            console.error("nx command unavailable. Please install nx");
+        }
     }
 }
 
