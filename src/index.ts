@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import figlet from "figlet";
 import { Command } from "commander";
 import fs from "fs";
@@ -7,6 +6,8 @@ import { spawn, execSync } from 'child_process';
 import { getAppDependencies } from "./readDependencies";
 
 const program = new Command();
+let isFirstTimeFlag = true;
+let firstCommand: 'f' | 'a' | null = null;
 
 console.log(figlet.textSync("shalo"));
 
@@ -21,7 +22,6 @@ program
     .option('-a, --apps <app-name>', 'App Name for checkout')
     .option('-e, --exclude <app-name>', 'App Name to exclude from checkout')
     .option('-f, --folder-only <folder>', 'Folder only for checkout')
-
     .action(checkout);
 
 program
@@ -49,8 +49,16 @@ async function disableSparseCheckout() {
 }
 
 async function addApp(name: string) {
-    executeCommand(`git sparse-checkout add ${name}`);
+    if (isFirstTimeFlag && firstCommand === null) {
+        firstCommand = 'a';
+        executeCommand('git sparse-checkout init --cone');
+    } else if (!isFirstTimeFlag && firstCommand === 'f') {
+        executeCommand(`git sparse-checkout add ${name}`);
+    } else if (firstCommand === 'a') {
+        executeCommand(`git sparse-checkout add ${name}`);
+    }
     console.log(`Added app: ${name}`);
+    isFirstTimeFlag = false;
 }
 
 async function cloneRepo(source: string) {
@@ -88,63 +96,77 @@ function initAndSetSparseCheckoutForApp(options: any) {
     const command = 'nx';
     const args = ['graph', '--file=output.json'];
 
-    const nxProcess = spawn(command, args);
+    if (!fs.existsSync('output.json')) {
+        const nxProcess = spawn(command, args);
 
-    nxProcess.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
-    });
+        nxProcess.stdout.on('data', (data) => {
+            console.log(`stdout: ${data}`);
+        });
 
-    nxProcess.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-    });
+        nxProcess.stderr.on('data', (data) => {
+            console.error(`stderr: ${data}`);
+        });
 
-    nxProcess.on('error', (error) => {
-        console.error(`Error spawning process: ${error.message}`);
-    });
+        nxProcess.on('error', (error) => {
+            console.error(`Error spawning process: ${error.message}`);
+        });
 
-    nxProcess.on('close', (code) => {
-        console.log(`Child process exited with code ${code}`);
-        if (code !== 0) {
-            console.log(`Command Failed nx with code ${code}`);
-            return;
-        }
+        nxProcess.on('close', (code) => {
+            console.log(`Child process exited with code ${code}`);
+            if (code !== 0) {
+                console.log(`Command Failed nx with code ${code}`);
+                return;
+            }
+            const appFolderNames: string[] = findAppDependencies(options);
+            console.log('appFolderNames', appFolderNames);
+            const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
+            if (gitSparseCheckoutInitSuccess) {
+                executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
+            }
+        });
+    } else {
         const appFolderNames: string[] = findAppDependencies(options);
-        console.log('appFolderNames', appFolderNames);
-        const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
-        if (gitSparseCheckoutInitSuccess) {
-            executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
-        }
-    });
-
+        executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
+    }
     console.log('Done');
 }
 
 async function checkout(options: any) {
     console.log('Called with options %o', options);
 
-    if (options.folderOnly) {
-        const nxGraphCommand = 'nx graph --file=output.json';
-        executeCommand(nxGraphCommand);
-        console.log('Generated output.json');
+    if (isFirstTimeFlag && firstCommand === null) {
+        if (options.folderOnly) {
+            firstCommand = 'f';
+            if (!fs.existsSync('output.json')) {
+                const nxGraphCommand = 'nx graph --file=output.json';
+                executeCommand(nxGraphCommand);
+                console.log('Generated output.json');
+            }
 
-        const initSuccess = executeCommand('git sparse-checkout init --cone');
-        if (initSuccess) {
+            const initSuccess = executeCommand('git sparse-checkout init --cone');
+            if (initSuccess) {
+                const folderPath = options.folderOnly;
+                executeCommand(`git sparse-checkout add ${folderPath}`);
+                console.log(`Added folder: ${folderPath}`);
+            }
+        } else if (options.apps) {
+            firstCommand = 'a';
+            const isCommandAvailable = checkCommandAvailability('nx');
+            if (isCommandAvailable) {
+                initAndSetSparseCheckoutForApp(options);
+            } else {
+                console.error("nx command unavailable. Please install nx");
+            }
+        }
+        isFirstTimeFlag = false;
+    } else {
+        if (options.apps) {
+            const appDependencies = findAppDependencies(options);
+            appDependencies.forEach(dep => executeCommand(`git sparse-checkout add ${dep}`));
+        } else if (options.folderOnly) {
             const folderPath = options.folderOnly;
             executeCommand(`git sparse-checkout add ${folderPath}`);
             console.log(`Added folder: ${folderPath}`);
-        }
-    } else {
-        const isCommandAvailable = checkCommandAvailability('nx');
-        if (isCommandAvailable) {
-            const appDependencies = findAppDependencies(options);
-            const allDependenciesExist = appDependencies.every(dep => fs.existsSync(dep)); 
-            if (allDependenciesExist) {
-                initAndSetSparseCheckoutForApp(options);
-            } else {
-                console.error('Some dependencies are missing.');
-            }
-        } else {
-            console.error("nx command unavailable. Please install nx");
         }
     }
 }
