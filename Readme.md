@@ -52,3 +52,4 @@ To come out of sparse checkout mode or to disable it and use git cli
 ```
 shalo clean
 ```
+
