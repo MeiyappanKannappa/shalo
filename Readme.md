@@ -32,7 +32,7 @@ you can exclude the dependent apps as well. But be careful using this, as it may
 
 Add Folders or Projects
 ```
-shalo add <FOLDER_NAME>
+shalo add <FOLDER_NAME> -f
 ```
 To add an NX project and its dependencies:
 ```

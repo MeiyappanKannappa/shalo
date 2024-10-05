@@ -49,22 +49,36 @@ async function disableSparseCheckout() {
 
 async function addApp(name: string, options: any) {
     if (options.folderOnly) {
-        executeCommand(`git sparse-checkout add ${name}`);
-        console.log(`Added folder: ${name}`);
+        const success = executeCommand(`git sparse-checkout add ${name}`);
+        if (success) {
+            console.log(`Added folder: ${name}`);
+        } else {
+            console.error(`Failed to add folder: ${name}. Please check if the folder name is correct.`);
+        }
     } else {
         const dependencies = getAppDependencies(name);
-        if (dependencies) {
+        if (dependencies && dependencies.length > 0) {
             dependencies.forEach(dep => {
-                executeCommand(`git sparse-checkout add ${dep.path}`);
-                console.log(`Added dependency: ${dep.path}`);
+                const success = executeCommand(`git sparse-checkout add ${dep.path}`);
+                if (success) {
+                    console.log(`Added dependency: ${dep.path}`);
+                } else {
+                    console.error(`Failed to add dependency: ${dep.path}. Please check if the path is correct.`);
+                }
             });
+        } else {
+            console.error(`No dependencies found for app: ${name}. Please check if the app name is correct.`);
         }
     }
 }
 
 async function cloneRepo(source: string) {
-    executeCommand(`git clone --filter=blob:none ${source}`);
-    console.log(`Cloned repository: ${source}`);
+    const success = executeCommand(`git clone --filter=blob:none ${source}`);
+    if (success) {
+        console.log(`Cloned repository: ${source}`);
+    } else {
+        console.error(`Failed to clone repository: ${source}. Please check if the repository URL is correct.`);
+    }
 }
 
 function findAppDependencies(options: any): string[] {
@@ -77,14 +91,18 @@ function findAppDependencies(options: any): string[] {
     if (options?.apps?.length > 0) {
         for (let i = 0; i < appNameArray?.length; i++) {
             const sharedComponentsArray = getAppDependencies(appNameArray[i]);
-            const filteredAppsArray = sharedComponentsArray?.filter(obj =>
-                !excludedApps.some(substring => obj.path.includes(substring))
-            );
-            if (filteredAppsArray) {
-                for (let j = 0; j < filteredAppsArray?.length; j++) {
-                    dependentAppNames.push(filteredAppsArray[j].path);
+            if (sharedComponentsArray) {
+                const filteredAppsArray = sharedComponentsArray.filter(obj =>
+                    !excludedApps.some(substring => obj.path.includes(substring))
+                );
+                if (filteredAppsArray.length > 0) {
+                    for (let j = 0; j < filteredAppsArray.length; j++) {
+                        dependentAppNames.push(filteredAppsArray[j].path);
+                    }
+                    console.log(`Dependencies for ${appNameArray[i]}:`, filteredAppsArray);
                 }
-                console.log(`Dependencies for ${appNameArray[i]}:`, filteredAppsArray);
+            } else {
+                console.warn(`No dependencies found for app: ${appNameArray[i]}`);
             }
         }
     } else {
@@ -159,4 +177,3 @@ function executeCommand(command: string) {
         return false;
     }
 }
-
