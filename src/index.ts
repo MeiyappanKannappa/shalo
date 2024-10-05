@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import figlet from "figlet";
 import { Command } from "commander";
 import fs from "fs";
@@ -6,10 +7,10 @@ import { spawn, execSync } from 'child_process';
 import { getAppDependencies } from "./readDependencies";
 
 const program = new Command();
-let isFirstTimeFlag = true;
-let firstCommand: 'f' | 'a' | null = null;
 
 console.log(figlet.textSync("shalo"));
+
+let isGraphGenerated = false;
 
 program
     .command('clone <source>')
@@ -21,7 +22,8 @@ program
     .description('Checkout a specific app')
     .option('-a, --apps <app-name>', 'App Name for checkout')
     .option('-e, --exclude <app-name>', 'App Name to exclude from checkout')
-    .option('-f, --folder-only <folder>', 'Folder only for checkout')
+    .option('-t, --team <config-file>', 'Name of the Team as in nxgit.yaml')
+    .option('-f, --folder <folder-name>', 'Additional folder to include in checkout')
     .action(checkout);
 
 program
@@ -49,16 +51,8 @@ async function disableSparseCheckout() {
 }
 
 async function addApp(name: string) {
-    if (isFirstTimeFlag && firstCommand === null) {
-        firstCommand = 'a';
-        executeCommand('git sparse-checkout init --cone');
-    } else if (!isFirstTimeFlag && firstCommand === 'f') {
-        executeCommand(`git sparse-checkout add ${name}`);
-    } else if (firstCommand === 'a') {
-        executeCommand(`git sparse-checkout add ${name}`);
-    }
+    executeCommand(`git sparse-checkout add ${name}`);
     console.log(`Added app: ${name}`);
-    isFirstTimeFlag = false;
 }
 
 async function cloneRepo(source: string) {
@@ -92,11 +86,12 @@ function findAppDependencies(options: any): string[] {
     return dependentAppNames;
 }
 
-function initAndSetSparseCheckoutForApp(options: any) {
+async function generateNxGraph() {
     const command = 'nx';
     const args = ['graph', '--file=output.json'];
 
-    if (!fs.existsSync('output.json')) {
+    if (!fs.existsSync('output.json') && !isGraphGenerated) {
+        console.log('Generating nx graph...');
         const nxProcess = spawn(command, args);
 
         nxProcess.stdout.on('data', (data) => {
@@ -107,67 +102,64 @@ function initAndSetSparseCheckoutForApp(options: any) {
             console.error(`stderr: ${data}`);
         });
 
-        nxProcess.on('error', (error) => {
-            console.error(`Error spawning process: ${error.message}`);
-        });
-
-        nxProcess.on('close', (code) => {
-            console.log(`Child process exited with code ${code}`);
-            if (code !== 0) {
-                console.log(`Command Failed nx with code ${code}`);
-                return;
-            }
-            const appFolderNames: string[] = findAppDependencies(options);
-            console.log('appFolderNames', appFolderNames);
-            const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
-            if (gitSparseCheckoutInitSuccess) {
-                executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
-            }
+        return new Promise<void>((resolve, reject) => {
+            nxProcess.on('close', (code) => {
+                console.log(`Child process exited with code ${code}`);
+                if (code !== 0) {
+                    console.log(`Command Failed nx with code ${code}`);
+                    reject(`Command Failed nx with code ${code}`);
+                } else {
+                    isGraphGenerated = true;
+                    resolve();
+                }
+            });
         });
     } else {
-        const appFolderNames: string[] = findAppDependencies(options);
-        executeCommand(`git sparse-checkout set ${appFolderNames.join(" ")}`);
+        console.log('output.json already exists or graph already generated, skipping nx graph generation.');
+        return Promise.resolve();
+    }
+}
+
+async function initAndSetSparseCheckoutForApp(options: any) {
+    const appFolderNames: string[] = findAppDependencies(options);
+    console.log('appFolderNames', appFolderNames);
+
+    // Fetching existing sparse-checkout list
+    let existingFolders: string[] = [];
+    try {
+        existingFolders = execSync('git sparse-checkout list', { encoding: 'utf8' }).split('\n').filter(Boolean);
+    } catch (error) {
+        if (error.message.includes("this worktree is not sparse")) {
+            console.log("Worktree is not sparse, initializing sparse-checkout.");
+        } else {
+            throw error;
+        }
+    }
+
+    // Adding new folders to the sparse-checkout list
+    const foldersToCheckout = [...new Set([...existingFolders, ...appFolderNames])];
+    const gitSparseCheckoutInitSuccess = executeCommand('git sparse-checkout init --cone');
+    if (gitSparseCheckoutInitSuccess) {
+        executeCommand(`git sparse-checkout set ${foldersToCheckout.join(" ")}`);
+        if (options.f) {
+            if (!existingFolders.includes(options.f)) {
+                executeCommand(`git sparse-checkout add ${options.f}`);
+            } else {
+                console.log(`Folder ${options.f} is already in sparse-checkout.`);
+            }
+        }
     }
     console.log('Done');
 }
 
 async function checkout(options: any) {
+    await generateNxGraph();
+    const isCommandAvailable = checkCommandAvailability('nx');
     console.log('Called with options %o', options);
-
-    if (isFirstTimeFlag && firstCommand === null) {
-        if (options.folderOnly) {
-            firstCommand = 'f';
-            if (!fs.existsSync('output.json')) {
-                const nxGraphCommand = 'nx graph --file=output.json';
-                executeCommand(nxGraphCommand);
-                console.log('Generated output.json');
-            }
-
-            const initSuccess = executeCommand('git sparse-checkout init --cone');
-            if (initSuccess) {
-                const folderPath = options.folderOnly;
-                executeCommand(`git sparse-checkout add ${folderPath}`);
-                console.log(`Added folder: ${folderPath}`);
-            }
-        } else if (options.apps) {
-            firstCommand = 'a';
-            const isCommandAvailable = checkCommandAvailability('nx');
-            if (isCommandAvailable) {
-                initAndSetSparseCheckoutForApp(options);
-            } else {
-                console.error("nx command unavailable. Please install nx");
-            }
-        }
-        isFirstTimeFlag = false;
+    if (isCommandAvailable) {
+        await initAndSetSparseCheckoutForApp(options);
     } else {
-        if (options.apps) {
-            const appDependencies = findAppDependencies(options);
-            appDependencies.forEach(dep => executeCommand(`git sparse-checkout add ${dep}`));
-        } else if (options.folderOnly) {
-            const folderPath = options.folderOnly;
-            executeCommand(`git sparse-checkout add ${folderPath}`);
-            console.log(`Added folder: ${folderPath}`);
-        }
+        console.error("nx command unavailable. Please install nx");
     }
 }
 
