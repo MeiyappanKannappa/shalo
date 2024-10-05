@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -69,7 +68,7 @@ function addApp(name, options) {
         }
         else {
             const dependencies = (0, readDependencies_1.getAppDependencies)(name);
-            if (dependencies) {
+            if (dependencies && dependencies.length > 0) {
                 dependencies.forEach(dep => {
                     const success = executeCommand(`git sparse-checkout add ${dep.path}`);
                     if (success) {
@@ -88,8 +87,13 @@ function addApp(name, options) {
 }
 function cloneRepo(source) {
     return __awaiter(this, void 0, void 0, function* () {
-        executeCommand(`git clone --filter=blob:none ${source}`);
-        console.log(`Cloned repository: ${source}`);
+        const success = executeCommand(`git clone --filter=blob:none ${source}`);
+        if (success) {
+            console.log(`Cloned repository: ${source}`);
+        }
+        else {
+            console.error(`Failed to clone repository: ${source}. Please check if the repository URL is correct.`);
+        }
     });
 }
 function findAppDependencies(options) {
@@ -102,12 +106,17 @@ function findAppDependencies(options) {
     if (((_c = options === null || options === void 0 ? void 0 : options.apps) === null || _c === void 0 ? void 0 : _c.length) > 0) {
         for (let i = 0; i < (appNameArray === null || appNameArray === void 0 ? void 0 : appNameArray.length); i++) {
             const sharedComponentsArray = (0, readDependencies_1.getAppDependencies)(appNameArray[i]);
-            const filteredAppsArray = sharedComponentsArray === null || sharedComponentsArray === void 0 ? void 0 : sharedComponentsArray.filter(obj => !excludedApps.some(substring => obj.path.includes(substring)));
-            if (filteredAppsArray) {
-                for (let j = 0; j < (filteredAppsArray === null || filteredAppsArray === void 0 ? void 0 : filteredAppsArray.length); j++) {
-                    dependentAppNames.push(filteredAppsArray[j].path);
+            if (sharedComponentsArray) {
+                const filteredAppsArray = sharedComponentsArray.filter(obj => !excludedApps.some(substring => obj.path.includes(substring)));
+                if (filteredAppsArray.length > 0) {
+                    for (let j = 0; j < filteredAppsArray.length; j++) {
+                        dependentAppNames.push(filteredAppsArray[j].path);
+                    }
+                    console.log(`Dependencies for ${appNameArray[i]}:`, filteredAppsArray);
                 }
-                console.log(`Dependencies for ${appNameArray[i]}:`, filteredAppsArray);
+            }
+            else {
+                console.warn(`No dependencies found for app: ${appNameArray[i]}`);
             }
         }
     }
