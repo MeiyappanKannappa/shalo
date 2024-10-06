@@ -1,6 +1,6 @@
 {
   "name": "shalo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tool to optimize git operations in NX Monorepo, and reduce the checkout & clone size",
   "main": "index.js",
   "bin": "dist/index.js",
