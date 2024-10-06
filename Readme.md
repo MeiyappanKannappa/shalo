@@ -15,7 +15,7 @@ Educating hundreds of engineers working in a monorepo about which shared package
 - You can install **Shalo** globally using the following command:
 
 ```
-npm install -g git+git@github.com:MeiyappanKannappa/shalo.git
+npm install -g shalo
 ```
 
 ## Note
