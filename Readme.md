@@ -1,51 +1,90 @@
-## Shalo - Optimize Git size for Nx Monorepo
+# 🎉 Shalo - Optimize Git Size for Nx Monorepo
 
-#### Inspired by [tiktok sparo](https://github.com/tiktok/sparo) for Rushjs
+#### Inspired by [tiktok sparo](https://github.com/tiktok/sparo) for RushJS
 
-A typical NX Monorepo folder structure would like the image below, how the git operations would be if the number of apps are on higher side with N number of dependencies on the shared libraries. Here comes to the rescue git shallow clone and sparse checkout. 
-![image](https://github.com/user-attachments/assets/70887c17-fd06-45ac-bf7b-e616db105634)
+A typical Nx Monorepo folder structure can be complex, especially when the number of applications and their dependencies on shared libraries grows. To address this, **Shalo** leverages Git's shallow clone and sparse checkout functionalities to streamline operations.
 
-However it will be difficult to educate hundreds of engineer operating on the monorepo working on various apps, perhaps even to idenify the list of shared packages / components their app needs. #### shalo is a cli tool based on nodejs to solve this problem.
+![Monorepo Structure](https://github.com/user-attachments/assets/70887c17-fd06-45ac-bf7b-e616db105634)
 
-### Install Shalo in your machine 
+Educating hundreds of engineers working in a monorepo about which shared packages and components their apps need can be challenging. **Shalo** is a CLI tool built with Node.js designed to simplify this process.
+
+---
+
+## 🚀 Install Shalo on Your Machine
+
+- You can install **Shalo** globally using the following command:
+
 ```
-npm install -g git+git@github.com:MeiyappanKannappa/shalo.git 
+npm install -g git+git@github.com:MeiyappanKannappa/shalo.git
 ```
-* This can be used in your CI Pipelines as well*
 
-Clone your repo
+## Note
+`This can be used in your CI Pipelines as well`
+
+## 🛠️ Clone Your Repository
+
+- To clone your repository, run:
 ```
 shalo clone <GITREPO_URL>
-(or)
+```
+
+- Alternatively, you can use:
+```
 npx shalo clone <GITREPO_URL>
 ```
-Install Dependencies in your repo
 
+## 📦 Install Dependencies in Your Repository
+
+- After cloning, navigate into your repository and install the dependencies:
 ```
-npm/yarn install
+npm install
+# or
+yarn install
 ```
-Now lets do checkout for only apps **(NA APP NAME)** that you in need NX Monorepo. Shalo computes the dependencies within nx and will checkout all the required dependent apps in the monorepo
+
+## 📥 Checkout Required Apps in the Nx Monorepo
+
+- To checkout only the apps you need, use the following command. Shalo computes the dependencies within Nx and checks out all required dependent apps in the monorepo:
 ```
 shalo checkout -a <NX-APP/NX-PROJECT_NAME>
 ```
-You can exclude the dependent apps as well. But be careful using this, as it may break nx build or any nx commands
+
+❌ Exclude Dependent Apps
+- If necessary, you can exclude specific dependent apps. However, be cautious with this option, as it may break Nx builds or other Nx commands:
 ```
-shalo checkout -a <APP/PROJECT_NAME> -e  <NX-EXCLUDED_APP_NAME>
-```
-Similarly you can checkout for only folders that you need in NX Monorepo. This command will not compute any dependencies within nx and will checkout only that folder in monorepo
-```
-shalo checkout -f <Folder_name>
+shalo checkout -a <APP/PROJECT_NAME> -e <NX-EXCLUDED_APP_NAME>
 ```
 
-In addition you may require to add folders in the sparse mode monorepo like mocks, tools etc to add folders.
+## 📂 Checkout Only Folders
+
+- If you need to checkout only specific folders without computing dependencies, you can use:
+```
+shalo checkout -f <FOLDER_NAME>
+```
+
+## ➕ Adding Folders to Sparse Mode
+- To add additional folders (like mocks, tools, etc.) to your sparse mode monorepo, run:
 ```
 shalo add -f <FOLDER_NAME>
 ```
-Additionaly you can also add **(APP_NAME)** to sparse repo using the below command when you run this command it will also add the respective dependencies to sparse mode repo.
+
+## ➕ Add Apps and Dependencies
+- You can also add an Nx app along with its dependencies to the sparse repo using the following command:
 ```
 shalo add -a <NX-APP/NX-PROJECT_NAME>
 ```
-To come out of sparse checkout mode or to disable it and use git cli
+
+## 🔄 Disable Sparse Checkout
+- To exit sparse checkout mode or to disable it and revert to using the Git CLI, execute:
 ```
 shalo clean
 ```
+
+## 📜 Code of Conduct and Contributing
+- For guidelines on how to contribute to this project, please refer to our [Code of Conduct](https://github.com/MeiyappanKannappa/shalo/blob/master/code_of_conduct.md) and [Contributing Guidelines](https://github.com/MeiyappanKannappa/shalo/blob/master/contributing.md)
+
+`
+With Shalo, you can streamline your workflow in Nx Monorepos, reducing the complexity of managing multiple apps and their dependencies. If you encounter any issues or have suggestions, please feel free to open an issue or a pull request in the repository.
+`
+
+# Happy coding! ✨
