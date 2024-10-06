@@ -24,19 +24,26 @@ Install Dependencies in your repo
 ```
 npm/yarn install
 ```
-Now lets do checkout for only apps **(NA APP NAME)** that you in need in NX Monorepo. Shalo computes the dependencies within nx and will checkout all the required dependent apps in the monorepo
+Now lets do checkout for only apps **(NA APP NAME)** that you in need NX Monorepo. Shalo computes the dependencies within nx and will checkout all the required dependent apps in the monorepo
 ```
 shalo checkout -a <NX-APP/NX-PROJECT_NAME>
 ```
-you can exclude the dependent apps as well. But be careful using this, as it may break nx build or any nx commands
+You can exclude the dependent apps as well. But be careful using this, as it may break nx build or any nx commands
 ```
 shalo checkout -a <APP/PROJECT_NAME> -e  <NX-EXCLUDED_APP_NAME>
 ```
-
-In addition you may need to add folders in the monorepo like mocks, tools etc to add folders. You should **NOT** provide **nx project name** here.
+Similarly you can checkout for only folders that you need in NX Monorepo. This command will not compute any dependencies within nx and will checkout only that folder in monorepo
 ```
-shalo add <FOLDER_NAME>
+shalo checkout -f <Folder_name>
+```
 
+In addition you may require to add folders in the sparse mode monorepo like mocks, tools etc to add folders.
+```
+shalo add -f <FOLDER_NAME>
+```
+Additionaly you can also add **(APP_NAME)** to sparse repo using the below command when you run this command it will also add the respective dependencies to sparse mode repo.
+```
+shalo add -a <NX-APP/NX-PROJECT_NAME>
 ```
 To come out of sparse checkout mode or to disable it and use git cli
 ```
