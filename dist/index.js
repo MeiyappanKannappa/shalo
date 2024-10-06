@@ -27,14 +27,15 @@ program
     .action(cloneRepo);
 program
     .command('checkout')
-    .description('Checkout a specific app')
+    .description('Checkout a specific app or folder')
     .option('-a, --apps <app-name>', 'App Name for checkout')
     .option('-e, --exclude <app-name>', 'App Name to exclude from checkout')
-    .option('-t, --team <config-file>', 'Name of the Team as in nxgit.yaml')
+    .option('-f, --folder-only <folder-name>', 'Folder Name for checkout')
     .action(checkout);
 program
-    .command('add <appName>')
-    .description('Add a folder to the monorepo')
+    .command('add <name>')
+    .description('Add a folder or NX project to the monorepo')
+    .option('-f, --folder-only', 'Add only the folder without computing dependencies')
     .action(addApp);
 program
     .command('clean')
@@ -55,10 +56,18 @@ function disableSparseCheckout() {
         console.log('Removed NXGIT controlled checkout. Now you can use git!!');
     });
 }
-function addApp(name) {
+function addApp(name, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        executeCommand(`git sparse-checkout add ${name}`);
-        console.log(`Added app: ${name}`);
+        if (options.folderOnly) {
+            executeCommand(`git sparse-checkout add ${name}`);
+            console.log(`Added folder: ${name}`);
+        }
+        else {
+            const dependencies = (0, readDependencies_1.getAppDependencies)(name);
+            dependencies.unshift({ dependency: name, path: name }); // Add the app itself to the list of dependencies
+            dependencies.forEach(dep => executeCommand(`git sparse-checkout add ${dep.path}`));
+            console.log(`Added NX project: ${name} with dependencies: ${dependencies.map(dep => dep.path).join(', ')}`);
+        }
     });
 }
 function cloneRepo(source) {
@@ -121,13 +130,19 @@ function initAndSetSparseCheckoutForApp(options) {
 }
 function checkout(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const isCommandAvailable = checkCommandAvailability('nx');
         console.log('Called with options %o', options);
-        if (isCommandAvailable) {
-            initAndSetSparseCheckoutForApp(options);
+        if (options.folderOnly) {
+            executeCommand(`git sparse-checkout set ${options.folderOnly}`);
+            console.log(`Checked out folder: ${options.folderOnly}`);
         }
         else {
-            console.error("nx command unavailable. Please install nx");
+            const isCommandAvailable = checkCommandAvailability('nx');
+            if (isCommandAvailable) {
+                initAndSetSparseCheckoutForApp(options);
+            }
+            else {
+                console.error("nx command unavailable. Please install nx");
+            }
         }
     });
 }
