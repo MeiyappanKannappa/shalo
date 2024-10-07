@@ -62,6 +62,12 @@ shalo checkout -a <APP/PROJECT_NAME> -e <NX-EXCLUDED_APP_NAME>
 shalo checkout -f <FOLDER_NAME>
 ```
 
+> **⚠️ Note:**
+
+> After checking out the required apps, ensure that you use the `shalo add` command when adding more apps or folders.  
+> Running `shalo checkout` again will **overwrite** the apps or folders you’ve already checked out.
+
+
 ## ➕ Adding Folders to Sparse Mode
 - To add additional folders (like mocks, tools, etc.) to your sparse mode monorepo, run:
 ```
