@@ -18,8 +18,8 @@ Educating hundreds of engineers working in a monorepo about which shared package
 npm install -g shalo
 ```
 
-## Note
-`This can be used in your CI Pipelines as well`
+> ## **⚠️ Note:**
+> This can be used in your CI Pipelines as well
 
 ## 🛠️ Clone Your Repository
 
@@ -62,8 +62,7 @@ shalo checkout -a <APP/PROJECT_NAME> -e <NX-EXCLUDED_APP_NAME>
 shalo checkout -f <FOLDER_NAME>
 ```
 
-> **⚠️ Note:**
-
+> ## **⚠️ Note:**
 > After checking out the required apps, ensure that you use the `shalo add` command when adding more apps or folders.  
 > Running `shalo checkout` again will **overwrite** the apps or folders you’ve already checked out.
 
