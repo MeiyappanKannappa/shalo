@@ -25,6 +25,13 @@ program
     .action(checkout);
 
 program
+    .command('remove [name]')
+    .description('Remove a folder or NX project to the monorepo')
+    .option('-f, --folder-only', 'Remove only the folder without computing dependencies')
+    .option('-a, --apps <app-name>', 'Remove Name to add with dependencies')
+    .action(removeApp);
+
+program
     .command('add [name]')
     .description('Add a folder or NX project to the monorepo')
     .option('-f, --folder-only', 'Add only the folder without computing dependencies')
@@ -83,6 +90,35 @@ async function addApp(name: string | undefined, options: { folderOnly?: boolean,
     }
 }
 
+// Add an app or folder to sparse-checkout
+async function removeApp(name: string | undefined, options: { folderOnly?: boolean, apps?: string }) {
+    if (!name && !options.apps) {
+        console.error('❌ Error: You must provide a folder name or use the -a option to specify an app.');
+        return;
+    }
+
+    if (options.folderOnly && name) {
+        const folderToCheck = name
+        const folderExists = checkFolderExists(folderToCheck);
+        if (!folderExists) {
+            console.error(`❌ Error: Folder '${name}' does not exist in the repository.`);
+            return;
+        }
+
+        removeDirectoriesFromSparseCheckoutFile([name])
+    } else if (options.apps) {
+        const dependencies = getAppDependencies(options.apps);
+        dependencies.unshift({ dependency: options.apps, path: options.apps });
+
+        if (removeDirectoriesFromSparseCheckoutFile(dependencies.map((d) => d.path))) {
+            console.log(`✅ Removed dependencies from sparse-checkout.`);
+        }
+
+        console.log(`🔗 removed NX project: '${options.apps}' with dependencies:\n  - ${dependencies.map(dep => dep.path).join('\n  - ')}`);
+    }
+}
+
+
 function checkFolderExists(folderName: string): boolean {
     try {
         const result = execSync(`git ls-tree -d HEAD ${folderName}`, { encoding: 'utf8' });
@@ -90,6 +126,41 @@ function checkFolderExists(folderName: string): boolean {
     } catch (error) {
         console.error(`Error: Unable to check folder existence for '${folderName}': ${error.message}`);
         return false;
+    }
+}
+
+function getGitRootDirectory(): string | null {
+    try {
+        const result = execSync(`git rev-parse --show-toplevel`, { encoding: 'utf8' });
+        return result.trim();
+    } catch (error) {
+        console.error(`Error: ${error.message}`);
+        return null;
+    }
+}
+
+function removeDirectoriesFromSparseCheckoutFile(directories: string[]): boolean {
+    try {
+        directories = directories.map((path) => {
+            if (!path.startsWith("/")) path = "/" + path;
+            if (!path.endsWith("/")) path = path + "/";
+            return path
+        })
+
+        const gitRootDirectory = getGitRootDirectory();
+        if (!gitRootDirectory) return;
+        const sparseCheckoutFile = path.join(gitRootDirectory, '.git', 'info', 'sparse-checkout');
+        let sparseCheckoutFileData = fs.readFileSync(sparseCheckoutFile, { encoding: 'utf8', flag: 'r' });
+
+        sparseCheckoutFileData = sparseCheckoutFileData.split('\n').filter((directory) => {
+            return !directories.includes(directory);
+        }).join('\n');
+
+        fs.writeFileSync(sparseCheckoutFile, sparseCheckoutFileData);
+        return true
+    } catch (error) {
+        console.error(`❌ Error: ${error.message}`);
+        return false
     }
 }
 
