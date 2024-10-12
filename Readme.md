@@ -79,6 +79,13 @@ shalo add -f <FOLDER_NAME>
 shalo add -a <NX-APP/NX-PROJECT_NAME>
 ```
 
+## ❌ Remove apps / folders 
+- To remove any app with dependencies or just the folder from sparse-checkout list, use the following command:
+```
+shalo remove -f <FOLDER_NAME>
+shalo remove -a <APP_NAME>
+```
+
 ## 🔄 Disable Sparse Checkout
 - To exit sparse checkout mode or to disable it and revert to using the Git CLI, execute:
 ```
